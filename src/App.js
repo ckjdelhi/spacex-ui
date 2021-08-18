@@ -6,9 +6,12 @@ import {
   rocketDetailsSelector,
 } from './slices/fetchRocketDetails';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Container, Card, Button, Row, Col } from 'react-bootstrap';
+import { Container, Card, Button, Row, Col, Form } from 'react-bootstrap';
+import queryString from 'query-string';
+import moment from 'moment';
 
 const App = () => {
+  const BASE_URL = 'https://api.spacexdata.com/v3/launches';
   const dispatch = useDispatch();
   const initialValues = {
     items: [],
@@ -17,32 +20,38 @@ const App = () => {
       limit: 150,
       launch_year: undefined,
       launch_success: undefined,
-      land_success: undefined,
+      upcoming: undefined,
+      month: undefined,
+      rocket_name: undefined,
     },
   };
   const [values, setValues] = useState(initialValues);
-  const uniqueLaunchYears = new Array(16)
-    .fill(0)
-    .map((_, index) => 2006 + index);
+  const lastYear = moment().subtract(1, 'year').format('YYYY');
+  const lastMonth = moment().format('MMMM') + ' ' + moment().format('YYYY');
+  console.log(lastYear);
   const { rocketDetails, loading, hasErrors } = useSelector(
     rocketDetailsSelector
   );
 
   useEffect(() => {
-    dispatch(fetchRocketDetails());
-  }, [dispatch]);
+    let filterUrl =
+      (values.filters.upcoming ? BASE_URL + '/upcoming' : BASE_URL) +
+      '?' +
+      queryString.stringify({ ...values.filters });
+    dispatch(fetchRocketDetails(filterUrl));
+  }, [dispatch, values.filters]);
 
   const updateApiFilters = (type, value) => {
     if (values.filters[type] === value) {
       value = undefined;
     }
 
-    const filters = {
-      ...values,
-      [type]: value,
-    };
-    //TODO
-    //Add logic to filter data
+    setValues((prevValues) => {
+      return {
+        ...prevValues,
+        filters: { ...prevValues.filters, [type]: value },
+      };
+    });
   };
   const rocketList = () => {
     if (loading) return <p>Loading posts...</p>;
@@ -50,7 +59,7 @@ const App = () => {
     return (
       <Row>
         {rocketDetails.map((details) => (
-          <Col md={12} lg={4}>
+          <Col md={12} lg={4} key={Math.random()}>
             <RocketDetails details={details} />
           </Col>
         ))}
@@ -63,38 +72,65 @@ const App = () => {
         <Col xs={12} sm={12} md={6} lg={3}>
           <Card className="App-filter-card">
             <Card.Body>
+              <Card.Title className="App-filter-header">Search</Card.Title>
+              <Card.Text className="App-filter-heading-launch-year">
+                By Rocket Name
+              </Card.Text>
+              <div className="App-filter-button-container">
+                <Form.Control
+                  type="text"
+                  placeholder="Input here..."
+                  onBlur={(e) =>
+                    updateApiFilters('rocket_name', e.target.value)
+                  }
+                />
+              </div>
+            </Card.Body>
+          </Card>
+          <Card className="App-filter-card">
+            <Card.Body>
               <Card.Title className="App-filter-header">Filters</Card.Title>
               <Card.Text className="App-filter-heading-launch-year">
-                Launch Year
-                <hr className="App-filters-hr" />
+                Last Year
               </Card.Text>
-
-              <Row>
-                <div className="App-filter-button-container">
-                  {uniqueLaunchYears.map((year) => {
-                    return (
-                      <Button
-                        className="App-filter-button"
-                        variant={
-                          values.filters.launch_year === year.toString()
-                            ? 'success'
-                            : 'outline-success'
-                        }
-                        value={year}
-                        onClick={(e) =>
-                          updateApiFilters('launch_year', e.target.value)
-                        }
-                      >
-                        {year}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </Row>
+              <div className="App-filter-button-container">
+                <Button
+                  className="App-filter-button"
+                  variant={
+                    values.filters.launch_year === lastYear.toString()
+                      ? 'success'
+                      : 'outline-success'
+                  }
+                  value={lastYear}
+                  onClick={(e) =>
+                    updateApiFilters('launch_year', e.target.value)
+                  }
+                  key={Math.random()}
+                >
+                  {lastYear}
+                </Button>
+              </div>
+              <Card.Text className="App-filter-heading-launch-year">
+                Last Month
+              </Card.Text>
+              <div className="App-filter-button-container">
+                <Button
+                  className="App-filter-button"
+                  variant={
+                    values.filters.month === lastMonth.toString()
+                      ? 'success'
+                      : 'outline-success'
+                  }
+                  value={lastMonth}
+                  onClick={(e) => updateApiFilters('month', e.target.value)}
+                  key={Math.random()}
+                >
+                  {lastMonth}
+                </Button>
+              </div>
 
               <Card.Text className="App-filter-heading">
                 Successful Launch
-                <hr className="App-filters-hr" />
               </Card.Text>
 
               <div className="App-filter-button-container">
@@ -130,20 +166,17 @@ const App = () => {
               </div>
 
               <Card.Text className="App-filter-heading">
-                Successful Landing
-                <hr className="App-filters-hr" />
+                Is it upcoming?
               </Card.Text>
               <div className="App-filter-button-container">
                 <Button
                   className="App-filter-button"
                   variant={
-                    values.filters.land_success === 'true'
+                    values.filters.upcoming === 'true'
                       ? 'success'
                       : 'outline-success'
                   }
-                  onClick={(e) =>
-                    updateApiFilters('land_success', e.target.value)
-                  }
+                  onClick={(e) => updateApiFilters('upcoming', e.target.value)}
                   value="true"
                 >
                   True
