@@ -11,8 +11,8 @@ import './index.css'
 const store = configureStore({ reducer: rootReducer })
 
 render(
-  <Provider store={store}>
-    <App />
-  </Provider>,
-  document.getElementById('root')
+    <Provider store={store}>
+        <App />
+    </Provider>,
+    document.getElementById('root')
 )
